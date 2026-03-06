@@ -20,6 +20,15 @@ outputs:
   stdout:
     description: "The stdout of the CLI"
     value: ${{ steps.run-command.outputs.stdout }}
+  release:
+    description: "The release object as JSON"
+    value: ${{ steps.run-command.outputs.release }}
+  release-id:
+    description: "The ID of the release"
+    value: ${{ steps.run-command.outputs.release-id }}
+  release-version:
+    description: "The version of the release"
+    value: ${{ steps.run-command.outputs.release-version }}
 
 runs:
   using: 'composite'
@@ -92,8 +101,27 @@ runs:
       run: |
         : run cn ${{ inputs.command }}
         echo "running \"${{ steps.download-cn-cli.outputs.cn-path }}\" from '${{ inputs.working-directory }}'"
-        exec 5>&1
-        OUTPUT=$(${{ steps.download-cn-cli.outputs.cn-path }} ${{ inputs.command }} | tee >(cat - >&5))
+        OUTPUT=$(${{ steps.download-cn-cli.outputs.cn-path }} ${{ inputs.command }})
+        echo "$OUTPUT"
         echo "stdout<<nEOFn" >> $GITHUB_OUTPUT
         echo "$OUTPUT" >> $GITHUB_OUTPUT
         echo "nEOFn" >> $GITHUB_OUTPUT
+
+        # Try to extract JSON from the output
+        if JSON=$(echo "$OUTPUT" | sed -n '/^{/,/}/p' | jq -c '.' 2>/dev/null); then
+          if [ -n "$JSON" ]; then
+            echo "release<<nEOFn" >> $GITHUB_OUTPUT
+            echo "$JSON" >> $GITHUB_OUTPUT
+            echo "nEOFn" >> $GITHUB_OUTPUT
+
+            ID=$(echo "$JSON" | jq -r '.id // empty')
+            if [ -n "$ID" ]; then
+              echo "release-id=$ID" >> $GITHUB_OUTPUT
+            fi
+
+            VERSION=$(echo "$JSON" | jq -r '.version // empty')
+            if [ -n "$VERSION" ]; then
+              echo "release-version=$VERSION" >> $GITHUB_OUTPUT
+            fi
+          fi
+        fi

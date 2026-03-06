@@ -1,6 +1,10 @@
 # Changelog
 
-## \[0.2.6]
+## [0.2.7]
+
+- Added `release`, `release-id` and `release-version` to the action outputs.
+
+## [0.2.6]
 
 - [`70f1904`](https://github.com/crabnebula-dev/cloud-release/commit/70f19045c5c3ffa7262bd5a4461ffb8cc6baa329) Sets a User-Agent when downloading the CLI.
 
